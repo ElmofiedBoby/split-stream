@@ -4,32 +4,28 @@ import numpy as np
 from obfuscate import Obfuscator
 
 # Open the video using cv2
-frames = []
 cap = cv2.VideoCapture('test.mp4')
 obfs = Obfuscator(12345, 1080)
+fps = cap.get(cv2.CAP_PROP_FPS)
+fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
+fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+frameSize = (int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)), int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+print(fps, cv2.CAP_PROP_FOURCC, frameSize)
 
-ret = True
-print("Shuffling....")
-for x in range(60):
-    print(x)
-    ret, frame = cap.read() # read one frame from the 'capture' object; img is (H, W, C)
-    shuffled = obfs.shuffle_frame(frame)
-    if ret:
-        frames.append(shuffled)
-video = np.stack(frames, axis=0) # dimensions (T, H, W, C)
+# Create video writer obj
+out = cv2.VideoWriter("saved.mp4", fourcc, fps, frameSize, isColor=True)
 
-# let `video` be an array with dimensionality (T, H, W, C)
-num_frames, height, width, _ = video.shape
-print(num_frames, height, width)
+# write to output
+counter = 1
+while True:
+    ret, frame = cap.read()
+    if not ret:
+        break
+    print("Writing frame ", counter)
+    counter += 1
+    out.write(obfs.shuffle_frame(frame))
+    #out.write(frame)
 
-filename = "saved.mp4"
-codec_id = "mp4v" # ID for a video codec.
-fourcc = cv2.VideoWriter_fourcc(*codec_id)
-out = cv2.VideoWriter(filename, fourcc=fourcc, fps=60, frameSize=(width, height))
-
-print("Writing....")
-for frame in np.split(video, num_frames, axis=0):
-    out.write(frame)
-
-# Release the video capture
+#Release video writier and capture objeccts
+out.release()
 cap.release()
